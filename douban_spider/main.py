@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 import urllib.request, urllib.error
 import xlwt
+import os.path
 
 class Data_item:
     link: str
@@ -22,15 +23,21 @@ findRating = re.compile(r'<span class="rating_num" property="v:average">(.*)</sp
 findJudge = re.compile(r'<span>(\d*)人评价</span>')
 findInq = re.compile(r'<span class="inq">(.*)</span>')
 findBd = re.compile(r'<p class="">(.*?)</p>', re.S)
-basePath = "./douban_spider/target"
+baseDir = "./douban_spider/target"
 
 
 def main():
+    
     baseurl = "https://movie.douban.com/top250?start="
+    intiDir()
     datalist = getData(baseurl)
-    savepath = basePath + "/豆瓣电影Top250.xls"
+    savepath = baseDir + "/豆瓣电影Top250.xls"
     saveData(datalist, savepath)
     
+
+def intiDir():
+    if not os.path.exists(baseDir):
+        os.makedirs(baseDir)
 
 
 def getData(baseUrl: str) -> list[Data_item]:
@@ -130,7 +137,7 @@ def saveData(datalist: list, savepath):
 
 
 def save_temp(temp: str, suffix: str):
-    f = open(basePath + "/temp_" + suffix, "w", encoding="utf-8")
+    f = open(baseDir + "/temp_" + suffix, "w", encoding="utf-8")
     f.write(temp)
 
 
