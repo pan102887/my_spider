@@ -36,6 +36,6 @@ class NanchuDataCollector:
             self.sheet.write(self.currentRow, 5, data.dateStr)
             self.currentRow += 1
 
-    def save(self, savePath: str):
-        book_path = savePath + "/" + "重熔用铝锭" + ".xls"
+    def save(self, savePath: str, fileName: str):
+        book_path = savePath + "/" + fileName + ".xls"
         self.book.save(book_path)

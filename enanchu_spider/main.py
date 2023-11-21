@@ -4,32 +4,44 @@ from bs4 import BeautifulSoup
 import bs4
 import urllib.request
 import urllib.error
-import xlwt
 import re
 import os.path
 import http.cookiejar
 import nanchu_data
 
+class KeyValueItem:
+    key: str
+    value: str
+    def __init__(self, key: str, value: str):
+        self.key = key
+        self.value = value
 
 
 baseDir: str = "./enanchu_spider/target"
-demoUrl: str = "http://www.enanchu.com/historyQuote.shtml?pageView.currentPage=1&pageView.pageSize=10&quote.area=4&quote.commodityName=22_&beginDate=&endDate="
 baseUrl: str = "http://www.enanchu.com/historyQuote.shtml"
-Cookie: str = ""
-
-
+# todo: cookie需要更新, 需要建立更新机制
+Cookie: str = "JSESSIONID=node0tffg0w9xxtbi1valaexz4et3x100564.node0"
+foshan_area_code: KeyValueItem = KeyValueItem("quote.area", "4")
 
 
 def main():
     intiDir()
+    getFoShanData()
+
+
+def getFoShanData():
+    params: dict[str, str] = {
+        foshan_area_code.key : foshan_area_code.value,
+        "quote.commodityName": "22_"
+    }
     dataCollector: nanchu_data.NanchuDataCollector = nanchu_data.NanchuDataCollector()
     pageSize: int = 10
     currentPage: int = 1
     while currentPage <= 100:
-        data_list: list[nanchu_data.NanChuDataItem] = getData(currentPage, pageSize)
+        data_list: list[nanchu_data.NanChuDataItem] = getData(currentPage, pageSize, params)
         dataCollector.dataCollect(data_list)
         currentPage += 1
-    dataCollector.save(baseDir)
+    dataCollector.save(baseDir, "南储佛山-重熔铝锭")
 
 
 def intiDir():
@@ -37,13 +49,12 @@ def intiDir():
         os.makedirs(baseDir)
 
 
-def askURL(currentPage: int, pageSize: int) -> str:
-    params: dict = {
-        "pageView.currentPage": currentPage,
-        "pageView.pageSize=10": pageSize,
-        "quote.area": 2,
-        "quote.commodityName": "22_"
-    }
+def askURL(currentPage: int, pageSize: int, params: dict[str, str]) -> str:
+    url: str = baseUrl + "?"
+    url += url + "pageView.currentPage=" + str(currentPage) + "&" + "pageView.pageSize=" + str(pageSize) + "&"
+    for key, value in params.items():
+        url += key + "=" + value + "&"
+    url = url[:-1]
 
     headers: dict = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -55,13 +66,8 @@ def askURL(currentPage: int, pageSize: int) -> str:
         "Upgrade-Insecure-Requests": 1,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
         "Refer" : "http://www.enanchu.com/historyQuote.shtml?pageView.currentPage=2&pageView.pageSize=10&quote.area=4&quote.commodityName=22_&beginDate=&endDate=",
+        "Cookie": Cookie
     }
-
-    url: str = baseUrl + "?"
-    for key, value in params.items():
-        url += key + "=" + str(value) + "&"
-    url = url[:-1]
-
     req = urllib.request.Request(url, headers=headers, method="GET")
     html = ""
     try:
@@ -75,17 +81,15 @@ def askURL(currentPage: int, pageSize: int) -> str:
     return html
 
 
-def getData(currentPage: int, pageSize: int) -> list[nanchu_data.NanChuDataItem]:
+def getData(currentPage: int, pageSize: int, params: dict[str, str]) -> list[nanchu_data.NanChuDataItem]:
     data_item_list: list[nanchu_data.NanChuDataItem] = []
-    html = askURL(currentPage, pageSize)
-    saveTempFile(baseDir, "resp", str(currentPage) + ".html", html)
+    html = askURL(currentPage, pageSize, params)
     soup = BeautifulSoup(html, "html.parser")
     for item in soup.find_all("div", class_="scroll_table"):
         for tr in item.find_all("tr"):
             data_item_list.append(getDataItem(tr))
 
     return data_item_list
-
 
 
 def getDataItem(tag: bs4.element.Tag) -> nanchu_data.NanChuDataItem:
@@ -107,14 +111,13 @@ def getDataItem(tag: bs4.element.Tag) -> nanchu_data.NanChuDataItem:
         return item
 
 
-
-
 def saveTempFile(savePath: str, fileName: str, suffix: str, content: str):
     filePath = savePath + "/" + fileName + suffix
     f = open(filePath, "w", encoding="utf-8")
     f.write(content)
     f.flush()
     f.close()
+
 
 if __name__ == "__main__":
     main()
