@@ -35,11 +35,13 @@ def getFoShanData():
         "quote.commodityName": "22_"
     }
     dataCollector: nanchu_data.NanchuDataCollector = nanchu_data.NanchuDataCollector()
-    pageSize: int = 10
+    pageSize: int = 100
     currentPage: int = 1
-    while currentPage <= 100:
+    while True:
         data_list: list[nanchu_data.NanChuDataItem] = getData(currentPage, pageSize, params)
         dataCollector.dataCollect(data_list)
+        if len(data_list) < pageSize:
+            break
         currentPage += 1
     dataCollector.save(baseDir, "南储佛山-重熔铝锭")
 
@@ -51,7 +53,7 @@ def intiDir():
 
 def askURL(currentPage: int, pageSize: int, params: dict[str, str]) -> str:
     url: str = baseUrl + "?"
-    url += url + "pageView.currentPage=" + str(currentPage) + "&" + "pageView.pageSize=" + str(pageSize) + "&"
+    url += "pageView.currentPage=" + str(currentPage) + "&" + "pageView.pageSize=" + str(pageSize) + "&"
     for key, value in params.items():
         url += key + "=" + value + "&"
     url = url[:-1]
